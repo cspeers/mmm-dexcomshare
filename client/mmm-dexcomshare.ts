@@ -22,7 +22,7 @@ interface IDexcomModuleProperties extends IModuleProperties {
 }
 
 const defaultChartOptions: Chart.ChartOptions = {
-    responsive: true,
+    responsive: false,
     maintainAspectRatio:true,
     title: {
         display: false,
