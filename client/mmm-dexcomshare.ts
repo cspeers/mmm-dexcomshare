@@ -118,10 +118,10 @@ let dexcomModule:IDexcomModuleProperties = {
         let deltaSign=delta>=0 ? '+' : '-'
         
         let fontColor= '#5AB05A'
-        if(this.currentBG >= this.config.highRange){
+        if(this.currentBG.Value >= this.config.highRange){
             fontColor='#E5E500'
         }
-        else if(this.currentBG < this.config.lowRange){
+        else if(this.currentBG.Value < this.config.lowRange){
             fontColor='#E50000'
         }
 
