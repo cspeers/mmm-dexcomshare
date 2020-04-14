@@ -1,0 +1,25 @@
+div.magicmirror div.module-content canvas {
+    background-color: black !important;
+}
+
+div.magicmirror-dexcomshare {
+    min-width: 380px;
+    margin: 0 auto 5px auto;
+    background-color: black !important;
+}
+
+.module.mmm-dexcomshare {
+    margin-bottom: 0px;
+}
+
+@media screen and (min-height:600px) {
+
+}
+
+@media screen and (min-height:1200px) and (orientation: landscape) {
+
+}
+
+@media screen and (min-height:1500px) and (orientation: landscape) {
+
+}

@@ -1,0 +1,22 @@
+{
+    "name": "mmm-dexcomshare",
+    "author": {
+        "name": "Chris Speers"
+    },
+    "version": "1.0.0",
+    "description": "Dexcom Share Module for MagicMirror",
+    "scripts": {
+        "install": "tsc -b",
+        "preinstall": "./cleanup.sh"
+    },
+    "devDependencies": {
+        "@types/chart.js": "^2.9.19",
+        "@types/moment": "2.13.0",
+        "@types/node": "^13.7.7",
+        "@types/request": "^2.48.4",
+        "typescript": ">=3.8.3"
+    },
+    "dependencies": {
+        "chart.js": "^2.9.3"
+    }
+}
