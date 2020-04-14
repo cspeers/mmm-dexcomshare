@@ -7,19 +7,23 @@ let ModuleLogger:ILogger={
     error:(m:string):void => Log.error(`[${ModuleDetails.name}] ${m}`)
 };
 
+/** properties for the client module */
 interface IDexcomModuleProperties extends IModuleProperties {
     version:string
     defaults:IDexcomModuleConfig
     canvas:HTMLCanvasElement
     /** subclass of the notification received event */
     notificationReceived:ModuleNotificationEvent
+    /** subclass of the socket notification received event */
     socketNotificationReceived:ISocketNotificationEvent<DexcomModuleNotificationType,IDexcomGlucoseEntryMessage>
     currentBG:IDexcomShareGlucoseEntry
     previousBG:IDexcomShareGlucoseEntry
+    bgValues:Array<IDexcomShareGlucoseEntry>
 }
 
 const defaultChartOptions: Chart.ChartOptions = {
     responsive: true,
+    maintainAspectRatio:true,
     title: {
         display: false,
         text: 'Blood Sugar Values (mg/dl)'
@@ -78,6 +82,7 @@ let dexcomModule:IDexcomModuleProperties = {
     canvas:undefined,
     currentBG:undefined,
     previousBG:undefined,
+    bgValues:undefined,
     defaults:{
         userName:undefined,
         password:undefined,
@@ -118,10 +123,10 @@ let dexcomModule:IDexcomModuleProperties = {
         let deltaSign=delta>=0 ? '+' : '-'
         
         let fontColor= '#5AB05A'
-        if(this.currentBG.Value >= this.config.highRange){
+        if(this.currentBG >= this.config.highRange){
             fontColor='#E5E500'
         }
-        else if(this.currentBG.Value < this.config.lowRange){
+        else if(this.currentBG < this.config.lowRange){
             fontColor='#E50000'
         }
 
@@ -214,7 +219,6 @@ let dexcomModule:IDexcomModuleProperties = {
         this.canvas=glucoseCanvas
 
         wrapper.appendChild(moduleContent)
-
         return wrapper;
     },
     start(){
@@ -226,6 +230,7 @@ let dexcomModule:IDexcomModuleProperties = {
     },
     suspend(){
         ModuleLogger.info(`Module Suspended...`)
+        
     },
     resume(){
         ModuleLogger.info(`Module Resumed...`)
@@ -242,7 +247,8 @@ let dexcomModule:IDexcomModuleProperties = {
             case 'BLOODSUGAR_VALUES':
                 if(payload){
                     ModuleLogger.info(`Received at ${payload.received} entries ${payload.entries.length}`);
-                    this.renderChart(payload.entries);
+                    this.bgValues=payload.entries
+                    this.renderChart(this.bgValues);
                 }
                 break;
             case 'AUTH_ERROR':
