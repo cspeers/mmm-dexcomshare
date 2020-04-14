@@ -44,8 +44,7 @@ const defaultChartOptions: Chart.ChartOptions = {
             },
             gridLines: {
                 display: true,
-                offsetGridLines: true,
-                color: "rgba(0, 0, 0, 0)",
+                offsetGridLines: true
             }
         }],
         yAxes: [{
@@ -60,8 +59,7 @@ const defaultChartOptions: Chart.ChartOptions = {
                 max:400
             },
             gridLines: {
-                display: true,
-                color: "rgba(0, 0, 0, 0)"
+                display: true
             }
         }]
     },
@@ -140,7 +138,7 @@ let dexcomModule:IDexcomModuleProperties = {
         infoDiv.appendChild(bs);
         
         let deltaElem = document.createElement("div");
-        deltaElem.innerHTML=`<span class="bright small light" style="display: table-cell;vertical-align:top;">${deltaSign} ${delta} mg/dL</span>`
+        deltaElem.innerHTML=`<span class="dimmed small light" style="display: table-cell;vertical-align:top;">${deltaSign} ${delta} mg/dL</span>`
         infoDiv.appendChild(deltaElem)
 
         bgValSpan.innerHTML=infoDiv.outerHTML
@@ -156,12 +154,14 @@ let dexcomModule:IDexcomModuleProperties = {
                     label: `Low <= ${this.config.lowRange} mg/dL`,
                     data: lowBgVals,
                     borderColor: 'red',
+                    backgroundColor:'red',
                     fill:this.config.fill,
                     pointRadius: 2
                 },
                 {
                     label: "In Range",
                     data: inRangeVals,
+                    backgroundColor:'limegreen',
                     borderColor: 'limegreen',
                     fill:this.config.fill,
                     pointRadius: 2
@@ -169,6 +169,7 @@ let dexcomModule:IDexcomModuleProperties = {
                 {
                     label: `High >= ${this.config.highRange} mg/dL`,
                     data: highVals,
+                    backgroundColor:'yellow',
                     borderColor: 'yellow',
                     fill:this.config.fill,
                     pointRadius: 2
