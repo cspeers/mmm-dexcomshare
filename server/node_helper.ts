@@ -1,10 +1,9 @@
-
 'use strict'
 
-import * as NodeHelper from "node_helper";
-import * as os from "os"
+import * as os from "os";
 import request, { RequestCallback } from 'request';
-import moment from 'moment'
+import moment from 'moment';
+import * as NodeHelper from "node_helper";
 
 /** Log wrapper */
 let DexcomHelperLogger:ILogger = {
@@ -187,6 +186,7 @@ class GlucoseFetcher {
     }
 }
 
+/** module helper configuration interface */
 interface IDexcomNodeHelperConfig extends NodeHelper.IHelperConfig {
     fetcher:GlucoseFetcher,
     config:IDexcomModuleConfig
@@ -195,21 +195,20 @@ interface IDexcomNodeHelperConfig extends NodeHelper.IHelperConfig {
 let helperConfig:IDexcomNodeHelperConfig = {
     fetcher:undefined,
     config:undefined,
-    //Create Fetcher
-    createFetcher(){
-        this.fetcher=new GlucoseFetcher(this.config,(bsg)=>this.broadcastResults(bsg))
-        this.fetcher.start()
-    },
     socketNotificationReceived(notification:DexcomModuleNotificationType,payload?:DexcomModuleNotificationPayload){
         if(payload)this.config=payload;
         switch (notification) {
             case "START_FETCHING":
-                this.createFetcher()
-                break;      
+            //Create Fetcher    
+                this.fetcher=new GlucoseFetcher(this.config,(bsg)=>this.broadcastResults(bsg))
+                this.fetcher.start()
+                break;
+            case "STOP_FETCHING":
+                this.fetcher.stop()
             default:
                 break;
         }
-    },    
+    },
     //Broadcast results
     broadcastResults(bsgValues:Array<IDexcomShareGlucoseEntry>){
         DexcomHelperLogger.info(`Received ${bsgValues.length} entries`)

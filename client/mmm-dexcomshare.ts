@@ -234,6 +234,7 @@ let dexcomModule:IDexcomModuleProperties = {
     },
     resume(){
         ModuleLogger.info(`Module Resumed...`)
+        this.renderChart(this.bgValues);
     },
     notificationReceived(message:ModuleNotificationType,payload:any,sender?:IModuleInstance){
         switch(message) {
