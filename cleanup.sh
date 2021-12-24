@@ -1,4 +1,4 @@
-rm *.d.ts -f
+rm *.d.ts* -f
 rm *.js -f
 rm *.js.map -f
 rm ./frontend/*.js -f
