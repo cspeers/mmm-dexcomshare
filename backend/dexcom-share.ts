@@ -18,7 +18,7 @@ const DEFAULT_HEADERS = {
   Accept: "application/json",
 };
 
-interface DexcomShareConfig {
+export interface DexcomShareConfig {
   server: string;
   applicationId: string;
   instance(): AxiosInstance;
