@@ -28,15 +28,15 @@ declare interface IDexcomModuleConfig {
   showY: boolean;
 }
 
-interface IDexcomGlucoseEntryMessage {
+interface IDexcomGlucoseEntryMessage<T> {
   received: Date;
-  entries: Array<IDexcomShareGlucoseEntry>;
+  entries: T[];
 }
 
 /** Module Socket Notification Payload */
-declare type DexcomModuleNotificationPayload =
+declare type DexcomModuleNotificationPayload<T> =
   | IDexcomModuleConfig
-  | IDexcomGlucoseEntryMessage;
+  | IDexcomGlucoseEntryMessage<T>;
 
 /** Module Socket Notification */
 declare type DexcomModuleNotificationType =

@@ -1,32 +1,34 @@
-
 div.magicmirror-dexcomshare {
-    background-color: black;
+  background-color: black;
 }
 
 .module.mmm-dexcomshare {
-    margin: 0 auto auto 0;
+  margin: 0 auto auto 0;
 }
 
-@media screen and (min-height:600px) {
-    div.magicmirror div.module-content canvas {
-        display: block;
-        max-width: 400px;
-        max-height: 200px;
-    }
+@media screen and (min-height: 600px) {
+  .module.mmm-dexcomshare canvas.magicmirror-dexcomshare-chart {
+    display: block;
+    max-width: 400px;
+    min-height: 200px;
+    max-height: 240px;
+  }
 }
 
-@media screen and (min-height:1200px) and (orientation: landscape) {
-    div.magicmirror div.module-content canvas {
-        display: block;
-        max-width: 400px;
-        max-height: 200px;
-    }
+@media screen and (min-height: 1200px) and (orientation: landscape) {
+  .module.mmm-dexcomshare canvas.magicmirror-dexcomshare-chart {
+    display: block;
+    max-width: 400px;
+    min-height: 240px;
+    max-height: 400px;
+  }
 }
 
-@media screen and (min-height:1500px) and (orientation: landscape) {
-    div.magicmirror div.module-content canvas {
-        display: block;
-        max-width: 400px;
-        max-height: 200px;
-    }
+@media screen and (min-height: 1500px) and (orientation: landscape) {
+  .module.mmm-dexcomshare canvas.magicmirror-dexcomshare-chart {
+    display: block;
+    max-width: 400px;
+    min-height: 240px;
+    max-height: 400px;
+  }
 }

@@ -2,7 +2,7 @@ import { arch, version, release } from "os";
 
 import { create, IHelperConfig } from "node_helper";
 import glucoseFetcher, { IGlucoseFetcher } from "./glucoseFetcher";
-import { newDexcomShareConfig } from "./dexcom-share";
+import { DexcomShareGlucoseEntry, newDexcomShareConfig } from "./dexcom-share";
 
 const architecture = arch();
 const osVersion = release();
@@ -29,6 +29,10 @@ interface IDexcomNodeHelperConfig extends IHelperConfig {
   socketNotificationReceived(
     notification: DexcomModuleNotificationType,
     payload?: ModuleConfig
+  ): void;
+  sendSocketNotification?(
+    notification: DexcomModuleNotificationType,
+    payload: IDexcomGlucoseEntryMessage<DexcomShareGlucoseEntry>
   ): void;
   start(): void;
   stop(): void;
@@ -70,11 +74,15 @@ const nodeHelperConfig: IDexcomNodeHelperConfig = {
         if (this.config) {
           //create the fetcher and start it.
           this.fetcher = newGlucoseFetcher(this.config);
-          this.fetcher.onGlucoseReceived = (bsgvals) => {
+          this.fetcher.onGlucoseReceived = (entries) => {
             if (this.sendSocketNotification) {
+              const received = new Date();
+              console.debug(
+                `Received ${entries.length} entries at ${received}`
+              );
               this.sendSocketNotification("BLOODSUGAR_VALUES", {
-                received: new Date(),
-                entries: bsgvals
+                received,
+                entries
               });
             }
           };

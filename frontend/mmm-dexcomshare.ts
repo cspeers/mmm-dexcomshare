@@ -1,5 +1,5 @@
 const defaultChartOptions: Chart.ChartOptions = {
-  responsive: false,
+  responsive: true,
   maintainAspectRatio: true,
   title: {
     display: false,
@@ -51,7 +51,8 @@ const defaultChartOptions: Chart.ChartOptions = {
   legend: {
     display: false,
     position: "bottom"
-  }
+  },
+  aspectRatio: 4 / 3
 };
 
 /** properties for the client module */
@@ -61,7 +62,7 @@ interface IDexcomModuleProperties extends IModuleProperties {
   /** subclass of the socket notification received event */
   socketNotificationReceived: ISocketNotificationEvent<
     DexcomModuleNotificationType,
-    IDexcomGlucoseEntryMessage
+    IDexcomGlucoseEntryMessage<any>
   >;
   version: string;
   defaults: IDexcomModuleConfig;
@@ -81,7 +82,7 @@ const ModuleLogger: ILogger = {
 };
 
 const chartjsPath = "./node_modules/chart.js/dist/Chart.bundle.js";
-const moduleCssPath = "mmm-dexcomshare.css";
+const moduleCssPath = "./mmm-dexcomshare.css";
 
 function renderChart(
   me: IDexcomModuleProperties,
@@ -101,7 +102,7 @@ function renderChart(
 
   ModuleLogger.info(`BG Values ${me.currentBG.DirectionAsUnicode} Current:${me.currentBG.Value} Previous:${me.previousBG.Value}
           Min:${minInSeries} Max:${maxInSeries}
-          Direction:${me.currentBG.Direction}Delta:${delta}`);
+          Direction:${me.currentBG.Direction} ${me.currentBG.DirectionAsUnicode} Delta:${delta}`);
 
   const lowBgVals = bgValues
     .filter((e) => +e.Value <= me.config.lowRange)
@@ -139,12 +140,15 @@ function renderChart(
     bs.setAttribute("style", "display: table;");
     bs.innerHTML = `
           <span class="bright medium light" style="display: table-cell;vertical-align:top;color:${fontColor}">${me.currentBG.Value}</span>
+          <span class="bright medium light" style="display: table-cell;vertical-align:top;></span>
           <span class="bright medium light" style="display: table-cell;vertical-align:top;">${me.currentBG.DirectionAsUnicode}</span>
       `;
 
     infoDiv.appendChild(bs);
     const deltaElem = document.createElement("div");
-    deltaElem.innerHTML = `<span class="dimmed small light" style="display: table-cell;vertical-align:top;">${deltaSign} ${delta} mg/dL</span>`;
+    deltaElem.innerHTML = `<span class="dimmed small light" style="display: table-cell;vertical-align:top;">${
+      delta >= 0 ? "+" : ""
+    }${delta} mg/dL</span>`;
     infoDiv.appendChild(deltaElem);
     bgValSpan.innerHTML = infoDiv.outerHTML;
   }
@@ -242,6 +246,7 @@ function getDexcomModuleProperties(
 
       const glucoseCanvas = document.createElement("canvas");
       glucoseCanvas.id = "glucoseChart";
+      glucoseCanvas.classList.add("magicmirror-dexcomshare-chart");
       me.canvas = glucoseCanvas;
 
       moduleContent.appendChild(glucoseCanvas);
@@ -275,7 +280,7 @@ function getDexcomModuleProperties(
     },
     socketNotificationReceived(
       message: DexcomModuleNotificationType,
-      payload: IDexcomGlucoseEntryMessage
+      payload: IDexcomGlucoseEntryMessage<IDexcomShareGlucoseEntry>
     ) {
       const me = this as IDexcomModuleProperties;
       ModuleLogger.info(`received socket notification ${message}`);
