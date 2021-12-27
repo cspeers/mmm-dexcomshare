@@ -15,7 +15,7 @@ const LATEST_GLUCOSE_URL =
 const DEFAULT_HEADERS = {
   "User-Agent": "Dexcom Share/3.0.2.11 CFNetwork/711.2.23 Darwin/14.0.0",
   "Content-Type": "application/json",
-  Accept: "application/json",
+  Accept: "application/json"
 };
 
 export interface DexcomShareConfig {
@@ -49,7 +49,7 @@ enum DexcomTrend {
   SingleDown = 6,
   DoubleDown = 7,
   NotComputable = 8,
-  OutOfRange = 9,
+  OutOfRange = 9
 }
 
 interface DexcomShareGlucose<T> {
@@ -73,7 +73,7 @@ export interface DexcomShareGlucoseEntry extends DexcomShareGlucose<Date> {
   DirectionAsUnicode: string;
 }
 
-type DexcomResponse = Array<DexcomShareGlucose<string>>;
+export type DexcomResponse = DexcomShareGlucose<string>[];
 
 function trendToDirection(trend: DexcomTrend): string {
   switch (trend) {
@@ -139,7 +139,7 @@ function mapDexcomEntry(
     Trend,
     Value,
     Direction,
-    DirectionAsUnicode,
+    DirectionAsUnicode
   };
 }
 
@@ -158,7 +158,7 @@ function mapNightscoutEntry(
     type: "sgv",
     trend: Trend,
     direction,
-    sgv: Value,
+    sgv: Value
   };
 }
 
@@ -180,9 +180,9 @@ export const newDexcomShareConfig = (
     instance() {
       return axios.create({
         baseURL: `https://${this.server}`,
-        headers: DEFAULT_HEADERS,
+        headers: DEFAULT_HEADERS
       });
-    },
+    }
   };
 };
 

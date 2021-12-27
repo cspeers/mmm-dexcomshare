@@ -1,11 +1,11 @@
-import { arch, platform, version } from "os";
+import { arch, version, release } from "os";
 
 import { create, IHelperConfig } from "node_helper";
 import glucoseFetcher, { IGlucoseFetcher } from "./glucoseFetcher";
 import { newDexcomShareConfig } from "./dexcom-share";
 
 const architecture = arch();
-const osVersion = version();
+const osVersion = release();
 
 type ModuleConfig = {
   /** Dexcom Share Account */
@@ -48,9 +48,7 @@ const newGlucoseFetcher = (config: ModuleConfig) => {
 const nodeHelperConfig: IDexcomNodeHelperConfig = {
   start() {
     console.info(
-      `Starting Module Helper version : ${
-        ModuleDetails.version
-      } - ${version()}:${arch()}`
+      `Starting Module Helper version : ${ModuleDetails.version} - ${osVersion}:${architecture}`
     );
   },
   stop() {
@@ -72,6 +70,14 @@ const nodeHelperConfig: IDexcomNodeHelperConfig = {
         if (this.config) {
           //create the fetcher and start it.
           this.fetcher = newGlucoseFetcher(this.config);
+          this.fetcher.onGlucoseReceived = (bsgvals) => {
+            if (this.sendSocketNotification) {
+              this.sendSocketNotification("BLOODSUGAR_VALUES", {
+                received: new Date(),
+                entries: bsgvals
+              });
+            }
+          };
           this.fetcher.start();
         }
         break;
@@ -84,5 +90,7 @@ const nodeHelperConfig: IDexcomNodeHelperConfig = {
         //someone else's
         break;
     }
-  },
+  }
 };
+
+module.exports = create(nodeHelperConfig);

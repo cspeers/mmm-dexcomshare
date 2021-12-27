@@ -2,7 +2,7 @@
   "compilerOptions": {
     "inlineSourceMap": false,
     "noImplicitAny": true,
-    "target": "ES6",
+    "target": "ES5",
     "module": "CommonJS",
     "esModuleInterop": true,
     "moduleResolution": "Node",

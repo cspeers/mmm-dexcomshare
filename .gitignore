@@ -6,6 +6,6 @@ frontend/*.d.ts*
 frontend/*.js
 backend/*.d.ts*
 backend/*.js
-tsconfig.tsbuildinfo
-**/tsconfig.tsbuildinfo
+**/*.tsbuildinfo
 package-lock.json
+*.tsbuildinfo

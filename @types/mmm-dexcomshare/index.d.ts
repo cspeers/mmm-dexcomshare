@@ -56,7 +56,7 @@ declare const enum DexcomTrend {
   SingleDown = 6,
   DoubleDown = 7,
   NotComputable = 8,
-  OutOfRange = 9,
+  OutOfRange = 9
 }
 
 declare interface IDexcomShareGlucose<T> {
@@ -99,5 +99,5 @@ declare interface ILogger {
 /** Misusing an enum to inline constants */
 declare const enum ModuleDetails {
   name = "mmm-dexcomshare",
-  version = "1.0.0",
+  version = "1.0.0"
 }

@@ -1,9 +1,10 @@
-import { config } from "process";
 import {
   authorizeDexcomShare,
-  DexcomShareGlucoseEntry,
+  DexcomResponse,
   DexcomShareConfig,
-  getDexcomShareGlucose,
+  DexcomShareGlucoseEntry,
+  fetchGlucose,
+  getDexcomShareGlucose
 } from "./dexcom-share";
 
 export interface IGlucoseFetcher extends DexcomShareConfig {
@@ -15,6 +16,7 @@ export interface IGlucoseFetcher extends DexcomShareConfig {
   stop(): void;
   fetchGlucoseLoop: () => void;
   loopInterval?: NodeJS.Timer;
+  onGlucoseReceived?(bsgvals: DexcomShareGlucoseEntry[]): void;
 }
 
 const glucoseFetcher = (config: DexcomShareConfig): IGlucoseFetcher => {
@@ -25,8 +27,7 @@ const glucoseFetcher = (config: DexcomShareConfig): IGlucoseFetcher => {
     entryLength: 1440,
     start() {
       const me = this as IGlucoseFetcher;
-      const { fetchGlucoseLoop, fetchInterval } = me;
-      me.loopInterval = setInterval(fetchGlucoseLoop, fetchInterval * 1000);
+      me.fetchGlucoseLoop();
     },
     stop() {
       const me = this as IGlucoseFetcher;
@@ -34,8 +35,10 @@ const glucoseFetcher = (config: DexcomShareConfig): IGlucoseFetcher => {
     },
     fetchGlucoseLoop() {
       const me = this as IGlucoseFetcher;
-      if (me.stopRequested && me.loopInterval) {
-        clearInterval(me.loopInterval);
+      const { fetchGlucoseLoop, fetchInterval, stopRequested, loopInterval } =
+        me;
+      if (stopRequested && loopInterval) {
+        clearInterval(loopInterval);
       } else {
         if (me.sessionId) {
           try {
@@ -72,18 +75,19 @@ const glucoseFetcher = (config: DexcomShareConfig): IGlucoseFetcher => {
             .then((sessionId) => {
               if (sessionId) {
                 me.sessionId = sessionId;
-                getDexcomShareGlucose(
-                  me,
-                  sessionId,
-                  (bsgValue) => bsgValue
-                ).then((bsgvals) => {});
+                fetchGlucose(me, sessionId).then((bsgvals) => {
+                  if (bsgvals && me.onGlucoseReceived) {
+                    me.onGlucoseReceived(bsgvals);
+                  }
+                });
               } else {
                 console.error(`Unable to obtain session for ${me.accountName}`);
               }
             });
         }
+        me.loopInterval = setInterval(fetchGlucoseLoop, fetchInterval * 1000);
       }
-    },
+    }
   };
 };
 

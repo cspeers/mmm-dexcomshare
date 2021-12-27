@@ -1,8 +1,9 @@
 {
   "compilerOptions": {
-    "target": "ES6",
+    "target": "ES5",
     "noImplicitAny": true,
     "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "moduleResolution": "Node",
     "sourceMap": true,
     "alwaysStrict": true,
@@ -10,8 +11,8 @@
     "listFiles": false,
     "noEmitOnError": true,
     "composite": true,
-    "outDir": "../",
     "baseUrl": "../",
+    "outDir": "../",
     "typeRoots": ["../node_modules/@types", "../@types/"]
   },
   "exclude": [],
