@@ -1,4 +1,4 @@
-import { arch, version, release } from "os";
+import { arch, release } from "os";
 
 import { create, IHelperConfig } from "node_helper";
 import glucoseFetcher, { IGlucoseFetcher } from "./glucoseFetcher";
@@ -82,7 +82,7 @@ const nodeHelperConfig: IDexcomNodeHelperConfig = {
               );
               this.sendSocketNotification("BLOODSUGAR_VALUES", {
                 received,
-                entries
+                entries,
               });
             }
           };
@@ -98,7 +98,7 @@ const nodeHelperConfig: IDexcomNodeHelperConfig = {
         //someone else's
         break;
     }
-  }
+  },
 };
 
 module.exports = create(nodeHelperConfig);
