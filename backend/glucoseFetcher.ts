@@ -1,10 +1,8 @@
 import {
   authorizeDexcomShare,
-  DexcomResponse,
   DexcomShareConfig,
   DexcomShareGlucoseEntry,
-  fetchGlucose,
-  getDexcomShareGlucose
+  fetchGlucose
 } from "./dexcom-share";
 
 export interface IGlucoseFetcher extends DexcomShareConfig {
@@ -43,11 +41,11 @@ const glucoseFetcher = (config: DexcomShareConfig): IGlucoseFetcher => {
         if (me.sessionId) {
           try {
             //fetch the glucose
-            getDexcomShareGlucose(
-              me,
-              me.sessionId,
-              (bsgValue) => bsgValue
-            ).then((bsgvals) => {});
+            fetchGlucose(me, me.sessionId).then((bsgvals) => {
+              if (bsgvals && me.onGlucoseReceived) {
+                me.onGlucoseReceived(bsgvals);
+              }
+            });
           } catch (error) {
             me.sessionId = undefined;
             //refresh the token
@@ -56,11 +54,11 @@ const glucoseFetcher = (config: DexcomShareConfig): IGlucoseFetcher => {
               .then((sessionId) => {
                 if (sessionId) {
                   me.sessionId = sessionId;
-                  getDexcomShareGlucose(
-                    me,
-                    sessionId,
-                    (bsgValue) => bsgValue
-                  ).then((bsgvals) => {});
+                  fetchGlucose(me, sessionId).then((bsgvals) => {
+                    if (bsgvals && me.onGlucoseReceived) {
+                      me.onGlucoseReceived(bsgvals);
+                    }
+                  });
                 } else {
                   console.error(
                     `Unable to obtain session for ${me.accountName}`

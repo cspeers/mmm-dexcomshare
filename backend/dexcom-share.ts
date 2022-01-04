@@ -32,25 +32,24 @@ interface NightScoutGlucoseEntry {
   sgv: number;
   date: number;
   dateString: string;
-  trend: number;
+  trend: DexcomTrend;
   direction: string;
   device: "share2";
   type: "sgv";
 }
 
 /** Trend Readings as Reported */
-enum DexcomTrend {
-  None = 0,
-  DoubleUp = 1,
-  SingleUp = 2,
-  FortyFiveUp = 3,
-  Flat = 4,
-  FortyFiveDown = 5,
-  SingleDown = 6,
-  DoubleDown = 7,
-  NotComputable = 8,
-  OutOfRange = 9
-}
+type DexcomTrend =
+  | "None"
+  | "DoubleUp"
+  | "SingleUp"
+  | "FortyFiveUp"
+  | "Flat"
+  | "FortyFiveDown"
+  | "SingleDown"
+  | "DoubleDown"
+  | "NOT COMPUTABLE"
+  | "RATE OUT OF RANGE";
 
 interface DexcomShareGlucose<T> {
   /** The time */
@@ -75,52 +74,27 @@ export interface DexcomShareGlucoseEntry extends DexcomShareGlucose<Date> {
 
 export type DexcomResponse = DexcomShareGlucose<string>[];
 
-function trendToDirection(trend: DexcomTrend): string {
-  switch (trend) {
-    case DexcomTrend.DoubleDown:
-      return "DoubleDown";
-    case DexcomTrend.DoubleUp:
-      return "DoubleUp";
-    case DexcomTrend.Flat:
-      return "Flat";
-    case DexcomTrend.FortyFiveDown:
-      return "FortyFiveDown";
-    case DexcomTrend.FortyFiveUp:
-      return "FortyFiveUp";
-    case DexcomTrend.NotComputable:
-      return "NotComputable";
-    case DexcomTrend.OutOfRange:
-      return "OutOfRange";
-    case DexcomTrend.SingleDown:
-      return "SingleDown";
-    case DexcomTrend.SingleUp:
-      return "SingleUp";
-    case DexcomTrend.None:
-    default:
-      return "None";
-  }
-}
-
 function trendToUnicode(trend: DexcomTrend): string {
   switch (trend) {
-    case DexcomTrend.DoubleUp:
+    case "DoubleUp":
       return "⇈";
-    case DexcomTrend.SingleUp:
+    case "SingleUp":
       return "↑";
-    case DexcomTrend.FortyFiveUp:
+    case "FortyFiveUp":
       return "↗";
-    case DexcomTrend.Flat:
+    case "Flat":
       return "→";
-    case DexcomTrend.FortyFiveDown:
+    case "FortyFiveDown":
       return "↘";
-    case DexcomTrend.SingleDown:
+    case "SingleDown":
       return "↓";
-    case DexcomTrend.DoubleDown:
+    case "DoubleDown":
       return "⇊";
-    case DexcomTrend.OutOfRange:
+    case "RATE OUT OF RANGE":
       return "⇕";
-    case DexcomTrend.None:
+    case "None":
       return "⇼";
+    case "NOT COMPUTABLE":
     default:
       return "-";
   }
@@ -130,7 +104,6 @@ function mapDexcomEntry(
   e: DexcomShareGlucose<string>
 ): DexcomShareGlucoseEntry {
   const { Trend, Value, DT, WT, ST } = e;
-  const Direction = trendToDirection(Trend);
   const DirectionAsUnicode = trendToUnicode(Trend);
   return {
     DT: moment(DT).local().toDate(),
@@ -138,7 +111,7 @@ function mapDexcomEntry(
     WT: moment(WT).toDate(),
     Trend,
     Value,
-    Direction,
+    Direction: Trend,
     DirectionAsUnicode
   };
 }
@@ -147,7 +120,6 @@ function mapNightscoutEntry(
   e: DexcomShareGlucose<string>
 ): NightScoutGlucoseEntry {
   const { Value, Trend, WT } = e;
-  const direction = trendToDirection(Trend);
   const d = moment(WT);
   const date = d.unix();
   const dateString = moment(WT).toDate().toString();
@@ -157,7 +129,7 @@ function mapNightscoutEntry(
     device: "share2",
     type: "sgv",
     trend: Trend,
-    direction,
+    direction: Trend,
     sgv: Value
   };
 }
@@ -239,7 +211,8 @@ export async function getDexcomShareGlucose<T>(
   try {
     const { data } = await instance.post<DexcomResponse>(glucosePath);
     if (data.length > 0) {
-      return data.map(mapper);
+      const glucose = data.map(mapper);
+      return glucose;
     }
   } catch (error) {
     console.error(error);

@@ -84,11 +84,24 @@ const ModuleLogger: ILogger = {
 const chartjsPath = "./node_modules/chart.js/dist/Chart.bundle.js";
 const moduleCssPath = "./mmm-dexcomshare.css";
 
+const currentBgValHtml = (
+  currentBg: string,
+  currentBgDirection: string,
+  fontColor: string
+) =>
+  `
+          <span class="bright medium light currentbsg" style="color:${fontColor}">${currentBg}</span>
+          <span class="bright medium light currentbsg"/>
+          <span class="bright medium light currentbsg">${currentBgDirection}</span>
+      `;
+
+const bsgDisplayHtml = (deltaSign: string, delta: number): string =>
+  `<span class="dimmed small light bsgvalue">${deltaSign}${delta} mg/dL</span>`;
+
 function renderChart(
   me: IDexcomModuleProperties,
   bgValues: IDexcomShareGlucoseEntry[]
 ) {
-  //const me = this as IDexcomModuleProperties;
   //These should be ordered descending by time
   me.bgValues = bgValues;
   me.currentBG = bgValues[0];
@@ -138,18 +151,17 @@ function renderChart(
 
     const bs = document.createElement("div");
     bs.setAttribute("style", "display: table;");
-    bs.innerHTML = `
-          <span class="bright medium light" style="display: table-cell;vertical-align:top;color:${fontColor}">${me.currentBG.Value}</span>
-          <span class="bright medium light" style="display: table-cell;vertical-align:top;></span>
-          <span class="bright medium light" style="display: table-cell;vertical-align:top;">${me.currentBG.DirectionAsUnicode}</span>
-      `;
+    bs.innerHTML = currentBgValHtml(
+      me.currentBG?.Value.toString() ?? "???",
+      me.currentBG?.DirectionAsUnicode ?? "-",
+      fontColor
+    );
 
     infoDiv.appendChild(bs);
     const deltaElem = document.createElement("div");
-    deltaElem.innerHTML = `<span class="dimmed small light" style="display: table-cell;vertical-align:top;">${
-      delta >= 0 ? "+" : ""
-    }${delta} mg/dL</span>`;
+    deltaElem.innerHTML = bsgDisplayHtml(deltaSign, delta);
     infoDiv.appendChild(deltaElem);
+
     bgValSpan.innerHTML = infoDiv.outerHTML;
   }
 

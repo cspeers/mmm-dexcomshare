@@ -6,6 +6,18 @@ div.magicmirror-dexcomshare {
   margin: 0 auto auto 0;
 }
 
+.module .mmm-dexcomshare .currentbsg {
+  padding-left: 5px;
+  padding-right: 5px;
+  display: table-cell;
+  vertical-align: top;
+}
+
+.module .mmm-dexcomshare .bsgvalue {
+  display: table-cell;
+  vertical-align: top;
+}
+
 @media screen and (min-height: 600px) {
   .module.mmm-dexcomshare canvas.magicmirror-dexcomshare-chart {
     display: block;
