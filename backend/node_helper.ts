@@ -46,13 +46,14 @@ const newGlucoseFetcher = (config: ModuleConfig) => {
     config.applicationId,
     config.entryLength
   );
-  return glucoseFetcher(dsConfig);
+  return glucoseFetcher(dsConfig, config.refreshInterval);
 };
 
 const nodeHelperConfig: IDexcomNodeHelperConfig = {
   start() {
     console.info(
-      `Starting Module Helper version : ${ModuleDetails.version} - ${osVersion}:${architecture}`
+      `Starting Module Helper version : ${ModuleDetails.version} - ${osVersion}:${architecture}`,
+      this.config
     );
   },
   stop() {
@@ -68,6 +69,7 @@ const nodeHelperConfig: IDexcomNodeHelperConfig = {
     if (payload) {
       //this should be the config..
       this.config = payload;
+      console.info(`Received Module config`, payload);
     }
     switch (notification) {
       case "START_FETCHING":
@@ -82,7 +84,7 @@ const nodeHelperConfig: IDexcomNodeHelperConfig = {
               );
               this.sendSocketNotification("BLOODSUGAR_VALUES", {
                 received,
-                entries,
+                entries
               });
             }
           };
@@ -98,7 +100,7 @@ const nodeHelperConfig: IDexcomNodeHelperConfig = {
         //someone else's
         break;
     }
-  },
+  }
 };
 
 module.exports = create(nodeHelperConfig);
