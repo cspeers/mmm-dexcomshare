@@ -3,6 +3,9 @@
   "author": {
     "name": "Chris Speers"
   },
+  "repository": {
+    "url": "https://github.com/cspeers/mmm-dexcomshare"
+  },
   "version": "1.0.0",
   "description": "Dexcom Share Module for MagicMirror",
   "scripts": {
