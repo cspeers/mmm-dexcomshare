@@ -18,7 +18,6 @@ export interface IGlucoseFetcher extends DexcomShareConfig {
 
 function fetchLoop(me: IGlucoseFetcher) {
   const { stopRequested, loopInterval } = me;
-  console.info(`Retrieving glucose`, me);
   if (stopRequested && loopInterval) {
     clearInterval(loopInterval);
   } else {

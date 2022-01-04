@@ -52,8 +52,7 @@ const newGlucoseFetcher = (config: ModuleConfig) => {
 const nodeHelperConfig: IDexcomNodeHelperConfig = {
   start() {
     console.info(
-      `Starting Module Helper version : ${ModuleDetails.version} - ${osVersion}:${architecture}`,
-      this.config
+      `Starting Module Helper version : ${ModuleDetails.version} - ${osVersion}:${architecture}`
     );
   },
   stop() {
