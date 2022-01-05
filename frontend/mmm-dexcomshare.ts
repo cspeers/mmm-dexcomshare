@@ -1,25 +1,6 @@
 const chartjsPath = "./node_modules/chart.js/dist/Chart.bundle.js";
 const moduleCssPath = "./mmm-dexcomshare.css";
 
-/** properties for the client module */
-interface IDexcomModuleProperties extends IModuleProperties {
-  /** subclass of the notification received event */
-  notificationReceived: ModuleNotificationEvent;
-  /** subclass of the socket notification received event */
-  socketNotificationReceived: ISocketNotificationEvent<
-    DexcomModuleNotificationType,
-    IDexcomGlucoseEntryMessage<any>
-  >;
-  version: string;
-  defaults: IDexcomModuleConfig;
-  canvas?: HTMLCanvasElement;
-
-  currentBG?: IDexcomShareGlucoseEntry;
-  previousBG?: IDexcomShareGlucoseEntry;
-  bgValues?: Array<IDexcomShareGlucoseEntry>;
-  config?: IDexcomModuleConfig;
-}
-
 /** wrapper for the Magic Mirror logger */
 const ModuleLogger: ILogger = {
   info: (m: string): void => Log.info(`[${ModuleDetails.name}] ${m}`),
@@ -27,10 +8,61 @@ const ModuleLogger: ILogger = {
   error: (m: string): void => Log.error(`[${ModuleDetails.name}] ${m}`)
 };
 
-type GlucoseDataSets = {
-  low: Chart.ChartPoint[];
-  inRange: Chart.ChartPoint[];
-  high: Chart.ChartPoint[];
+const defaultChartOptions: Chart.ChartOptions = {
+  responsive: true,
+  maintainAspectRatio: true,
+  title: {
+    display: false,
+    text: "Blood Sugar Values (mg/dl)"
+  },
+  scales: {
+    xAxes: [
+      {
+        type: "time",
+        display: true,
+        distribution: "series",
+        time: {
+          parser: "YYYY-MM-DD HH:mm:ss",
+          unit: "minute",
+          unitStepSize: 30
+        },
+        ticks: {
+          source: "auto",
+          autoSkip: true
+        },
+        scaleLabel: {
+          display: true,
+          labelString: "Date"
+        },
+        gridLines: {
+          display: true,
+          offsetGridLines: true
+        }
+      }
+    ],
+    yAxes: [
+      {
+        display: true,
+        scaleLabel: {
+          display: true,
+          labelString: "mg/dL"
+        },
+        ticks: {
+          beginAtZero: true,
+          min: 30,
+          max: 400
+        },
+        gridLines: {
+          display: true
+        }
+      }
+    ]
+  },
+  legend: {
+    display: false,
+    position: "bottom"
+  },
+  aspectRatio: 4 / 3
 };
 
 function bsgToPoint(a: IDexcomShareGlucoseEntry): Chart.ChartPoint {
@@ -126,63 +158,6 @@ function bsgToChartData(
   };
   return data;
 }
-
-const defaultChartOptions: Chart.ChartOptions = {
-  responsive: true,
-  maintainAspectRatio: true,
-  title: {
-    display: false,
-    text: "Blood Sugar Values (mg/dl)"
-  },
-  scales: {
-    xAxes: [
-      {
-        type: "time",
-        display: true,
-        distribution: "series",
-        time: {
-          parser: "YYYY-MM-DD HH:mm:ss",
-          unit: "minute",
-          unitStepSize: 30
-        },
-        ticks: {
-          source: "auto",
-          autoSkip: true
-        },
-        scaleLabel: {
-          display: true,
-          labelString: "Date"
-        },
-        gridLines: {
-          display: true,
-          offsetGridLines: true
-        }
-      }
-    ],
-    yAxes: [
-      {
-        display: true,
-        scaleLabel: {
-          display: true,
-          labelString: "mg/dL"
-        },
-        ticks: {
-          beginAtZero: true,
-          min: 30,
-          max: 400
-        },
-        gridLines: {
-          display: true
-        }
-      }
-    ]
-  },
-  legend: {
-    display: false,
-    position: "bottom"
-  },
-  aspectRatio: 4 / 3
-};
 
 function renderChart(
   me: IDexcomModuleProperties,

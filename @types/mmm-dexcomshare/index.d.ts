@@ -28,6 +28,25 @@ declare interface IDexcomModuleConfig {
   showY: boolean;
 }
 
+/** properties for the client module */
+interface IDexcomModuleProperties extends IModuleProperties {
+  /** subclass of the notification received event */
+  notificationReceived: ModuleNotificationEvent;
+  /** subclass of the socket notification received event */
+  socketNotificationReceived: ISocketNotificationEvent<
+    DexcomModuleNotificationType,
+    IDexcomGlucoseEntryMessage<any>
+  >;
+  version: string;
+  defaults: IDexcomModuleConfig;
+  canvas?: HTMLCanvasElement;
+
+  currentBG?: IDexcomShareGlucoseEntry;
+  previousBG?: IDexcomShareGlucoseEntry;
+  bgValues?: Array<IDexcomShareGlucoseEntry>;
+  config?: IDexcomModuleConfig;
+}
+
 interface IDexcomGlucoseEntryMessage<T> {
   received: Date;
   entries: T[];
@@ -43,7 +62,8 @@ declare type DexcomModuleNotificationType =
   | "START_FETCHING"
   | "BLOODSUGAR_VALUES"
   | "STOP_FETCHING"
-  | "AUTH_ERROR";
+  | "AUTH_ERROR"
+  | NotificationType;
 
 /** Trend Readings as Reported */
 declare const enum DexcomTrend {
@@ -95,6 +115,12 @@ declare interface ILogger {
   /** logs errors */
   error(message: string): void;
 }
+
+declare type GlucoseDataSets = {
+  low: Chart.ChartPoint[];
+  inRange: Chart.ChartPoint[];
+  high: Chart.ChartPoint[];
+};
 
 /** Misusing an enum to inline constants */
 declare const enum ModuleDetails {
