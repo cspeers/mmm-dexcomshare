@@ -1,6 +1,7 @@
 rm *.d.ts* -f
 rm *.js -f
 rm *.js.map -f
+rm *.tsbuildinfo -f
 rm ./frontend/*.js -f
 rm ./frontend/*.map -f
 rm ./frontend/*.d.ts* -f

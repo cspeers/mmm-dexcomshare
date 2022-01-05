@@ -78,7 +78,6 @@ const glucoseFetcher = (
     ...config,
     fetchInterval,
     stopRequested: false,
-    entryLength: 1440,
     log,
     start() {
       const fetcher = () => {
