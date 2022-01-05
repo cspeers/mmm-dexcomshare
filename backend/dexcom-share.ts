@@ -209,12 +209,11 @@ export async function getDexcomShareGlucose<T>(
   console.debug(`Retrieving Glucose readings from ${glucosePath}`);
   const instance = config.instance();
   try {
-    const { data, status, statusText } = await instance.post<DexcomResponse>(
-      glucosePath
-    );
+    const { data, status, statusText, config } =
+      await instance.post<DexcomResponse>(glucosePath);
     if (data.length > 0) {
       console.debug(
-        ` ${status} ${statusText} Received ${data.length} Glucose entries`
+        `[${status} ${statusText}] Received ${data.length} Glucose entries from ${config.baseURL}`
       );
       const glucose = data.map(mapper);
       return glucose;

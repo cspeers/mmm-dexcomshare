@@ -1,3 +1,4 @@
+import moment from "moment";
 import {
   authorizeDexcomShare,
   DexcomShareConfig,
@@ -17,8 +18,9 @@ export interface IGlucoseFetcher extends DexcomShareConfig {
   onGlucoseReceived?(bsgvals: DexcomShareGlucoseEntry[]): void;
 }
 
-function authorizeAndFetch(me: IGlucoseFetcher, log: ILogger) {
+function authorizeAndFetch(me: IGlucoseFetcher) {
   //refresh the token
+  const { log } = me;
   authorizeDexcomShare(me)
     //then fetch the glucose
     .then((sessionId) => {
@@ -53,10 +55,10 @@ function fetchLoop(me: IGlucoseFetcher) {
       } catch (error) {
         me.sessionId = undefined;
         log.error(`Error fetching glucose, re-authorizing ${error}`);
-        authorizeAndFetch(me, log);
+        authorizeAndFetch(me);
       }
     } else {
-      authorizeAndFetch(me, log);
+      authorizeAndFetch(me);
     }
   }
 }
@@ -74,9 +76,16 @@ const glucoseFetcher = (
     entryLength: 1440,
     log,
     start() {
-      try {
+      const fetcher = () => {
+        log.info(`Starting fetch at ${moment(moment.now()).format()}`);
         fetchLoop(this);
-        this.loopInterval = setInterval(() => fetchLoop(this), fetchIntervalMs);
+        log.info(
+          `Next execution at ${moment(moment.now() + fetchIntervalMs).format()}`
+        );
+      };
+      try {
+        fetcher();
+        this.loopInterval = setInterval(fetcher, fetchIntervalMs);
       } catch (error) {
         this.log.error(`Error setting up fetch loop! ${error}`);
       }
