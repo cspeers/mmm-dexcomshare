@@ -1,3 +1,6 @@
+const DEFAULT_DEXCOM_SERVER = "share2.dexcom.com";
+const DEFAULT_DEXCOM_APPID = "d89443d2-327c-4a6f-89e5-496bbb0317db";
+
 const chartjsPath = "./node_modules/chart.js/dist/Chart.bundle.js";
 const moduleCssPath = "./mmm-dexcomshare.css";
 
@@ -65,14 +68,17 @@ const defaultChartOptions: Chart.ChartOptions = {
   aspectRatio: 4 / 3
 };
 
-function bsgToPoint(a: IDexcomShareGlucoseEntry): Chart.ChartPoint {
+function bsgToChartPoint(a: IDexcomShareGlucoseEntry): Chart.ChartPoint {
   return { x: a.WT, y: a.Value };
 }
 
-function renderInfoDiv(me: IDexcomModuleProperties) {
-  const bgValSpan = document.querySelector("#current-bsg-value");
+function renderInfoDiv(
+  currentBG: IDexcomShareGlucoseEntry,
+  previousBG: IDexcomShareGlucoseEntry,
+  config: IDexcomModuleConfig,
+  bgValSpan: Element
+) {
   if (bgValSpan) {
-    const { currentBG, previousBG, config } = me;
     const delta = currentBG.Value - previousBG.Value;
     const deltaSign = delta >= 0 ? "+" : "-";
 
@@ -109,33 +115,33 @@ function renderInfoDiv(me: IDexcomModuleProperties) {
 }
 
 function bsgToChartData(
-  me: IDexcomModuleProperties,
+  config: IDexcomModuleConfig,
   bgValues: IDexcomShareGlucoseEntry[]
 ): Chart.ChartData {
   const glucose = bgValues.reduce<GlucoseDataSets>(
-    (a, e) => {
-      if (e.Value <= me.config.lowRange) {
-        a.low.push(bsgToPoint(e));
+    (acc, bsg) => {
+      if (bsg.Value <= config.lowRange) {
+        acc.low.push(bsgToChartPoint(bsg));
       } else if (
-        e.Value >= me.config.lowRange &&
-        e.Value <= me.config.highRange
+        bsg.Value >= config.lowRange &&
+        bsg.Value <= config.highRange
       ) {
-        a.high.push(bsgToPoint(e));
-      } else if (e.Value >= me.config.highRange) {
-        a.inRange.push(bsgToPoint(e));
+        acc.inRange.push(bsgToChartPoint(bsg));
+      } else if (bsg.Value >= config.highRange) {
+        acc.high.push(bsgToChartPoint(bsg));
       }
-      return a;
+      return acc;
     },
     { low: [], inRange: [], high: [] }
   );
-  const data: Chart.ChartData = {
+  return {
     datasets: [
       {
-        label: `Low <= ${me.config.lowRange} mg/dL`,
+        label: `Low <= ${config.lowRange} mg/dL`,
         data: glucose.low,
         borderColor: "red",
         backgroundColor: "red",
-        fill: me.config.fill,
+        fill: config.fill,
         pointRadius: 2
       },
       {
@@ -143,39 +149,39 @@ function bsgToChartData(
         data: glucose.inRange,
         backgroundColor: "limegreen",
         borderColor: "limegreen",
-        fill: me.config.fill,
+        fill: config.fill,
         pointRadius: 2
       },
       {
-        label: `High >= ${me.config.highRange} mg/dL`,
+        label: `High >= ${config.highRange} mg/dL`,
         data: glucose.high,
         backgroundColor: "yellow",
         borderColor: "yellow",
-        fill: me.config.fill,
+        fill: config.fill,
         pointRadius: 2
       }
     ]
   };
-  return data;
 }
 
 function renderChart(
-  me: IDexcomModuleProperties,
+  config: IDexcomModuleConfig,
+  canvas: HTMLCanvasElement,
   bgValues: IDexcomShareGlucoseEntry[]
 ) {
-  const type = me.config.chartType ?? "line";
-  const options = me.config.chartOptions ?? defaultChartOptions;
-  const data = bsgToChartData(me, bgValues);
+  const type = config.chartType ?? "line";
+  const options = config.chartOptions ?? defaultChartOptions;
+  const data = bsgToChartData(config, bgValues);
 
   //we'll use the simple setting from the config if a full chartjs one wasn't given
   if (
     options.title.text === "Blood Sugar Values (mg/dl)" &&
     !options.title.display
   ) {
-    options.scales.xAxes[0].display = me.config.showX;
-    options.scales.yAxes[0].display = me.config.showY;
+    options.scales.xAxes[0].display = config.showX;
+    options.scales.yAxes[0].display = config.showY;
   }
-  const glucoseChart = new Chart(me.canvas, {
+  const glucoseChart = new Chart(canvas, {
     type,
     data,
     options
@@ -187,6 +193,7 @@ function renderModule(
   me: IDexcomModuleProperties,
   bgValues: IDexcomShareGlucoseEntry[]
 ) {
+  const { config, canvas } = me;
   //These should be ordered descending by time
   me.bgValues = bgValues;
   me.currentBG = bgValues[0];
@@ -203,9 +210,9 @@ function renderModule(
             Direction:${me.currentBG.Direction} ${
     me.currentBG.DirectionAsUnicode
   } Delta:${me.currentBG.Value - me.previousBG.Value}`);
-
-  const infoDiv = renderInfoDiv(me);
-  const chart = renderChart(me, bgValues);
+  const bgValSpan = document.querySelector("#current-bsg-value");
+  renderInfoDiv(me.currentBG, me.previousBG, config, bgValSpan);
+  renderChart(config, canvas, bgValues);
 }
 
 function getDom(me: IDexcomModuleProperties) {
@@ -245,9 +252,9 @@ function getDexcomModuleProperties(
       userName: "",
       password: "",
       entryLength: 1440,
-      server: "share2.dexcom.com",
+      server: DEFAULT_DEXCOM_SERVER,
       refreshInterval: 300,
-      applicationId: "d89443d2-327c-4a6f-89e5-496bbb0317db",
+      applicationId: DEFAULT_DEXCOM_APPID,
       chartOptions: defaultChartOptions,
       chartType: "line",
       highRange: 185,
@@ -277,7 +284,7 @@ function getDexcomModuleProperties(
     },
     resume() {
       ModuleLogger.info(`Module Resumed...`);
-      renderChart(this, this.bgValues);
+      renderModule(this.config, this.bgValues);
     },
     notificationReceived(
       message: ModuleNotificationType,

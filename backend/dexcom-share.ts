@@ -18,26 +18,6 @@ const DEFAULT_HEADERS = {
   Accept: "application/json"
 };
 
-export interface DexcomShareConfig {
-  server: string;
-  applicationId: string;
-  instance(): AxiosInstance;
-  accountName?: string;
-  password?: string;
-  entryLength: number;
-  maxCount: number;
-}
-
-interface NightScoutGlucoseEntry {
-  sgv: number;
-  date: number;
-  dateString: string;
-  trend: DexcomTrend;
-  direction: string;
-  device: "share2";
-  type: "sgv";
-}
-
 /** Trend Readings as Reported */
 type DexcomTrend =
   | "None"
@@ -50,6 +30,26 @@ type DexcomTrend =
   | "DoubleDown"
   | "NOT COMPUTABLE"
   | "RATE OUT OF RANGE";
+
+export interface DexcomShareConfig {
+  server: string;
+  applicationId: string;
+  instance(): AxiosInstance;
+  accountName?: string;
+  password?: string;
+  entryLength: number;
+  maxCount: number;
+}
+
+export interface NightScoutGlucoseEntry {
+  sgv: number;
+  date: number;
+  dateString: string;
+  trend: DexcomTrend;
+  direction: string;
+  device: "share2";
+  type: "sgv";
+}
 
 interface DexcomShareGlucose<T> {
   /** The time */

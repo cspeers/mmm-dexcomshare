@@ -6,6 +6,7 @@ import glucoseFetcher, { IGlucoseFetcher } from "./glucoseFetcher";
 import { DexcomShareGlucoseEntry, newDexcomShareConfig } from "./dexcom-share";
 import { moduleLogger } from "./moduleLogger";
 
+/** Base configuration options */
 type ModuleConfig = {
   /** Dexcom Share Account */
   userName: string;

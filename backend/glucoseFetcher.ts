@@ -1,4 +1,5 @@
 import moment from "moment";
+
 import {
   authorizeDexcomShare,
   DexcomShareConfig,
@@ -6,6 +7,10 @@ import {
   fetchGlucose
 } from "./dexcom-share";
 
+/**
+ * Simple worker to authorize and fetch values from the dexcom share API
+ * on a repeated cadence
+ */
 export interface IGlucoseFetcher extends DexcomShareConfig {
   fetchInterval: number;
   sessionId?: string;
