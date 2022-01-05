@@ -13,16 +13,36 @@ export interface IGlucoseFetcher extends DexcomShareConfig {
   start(): void;
   stop(): void;
   loopInterval?: NodeJS.Timer;
+  log: ILogger;
   onGlucoseReceived?(bsgvals: DexcomShareGlucoseEntry[]): void;
 }
 
+function authorizeAndFetch(me: IGlucoseFetcher, log: ILogger) {
+  //refresh the token
+  authorizeDexcomShare(me)
+    //then fetch the glucose
+    .then((sessionId) => {
+      if (sessionId) {
+        log.info(`Obtained new sessionId: ${sessionId}`);
+        me.sessionId = sessionId;
+        fetchGlucose(me, sessionId).then((bsgvals) => {
+          if (bsgvals && me.onGlucoseReceived) {
+            me.onGlucoseReceived(bsgvals);
+          }
+        });
+      } else {
+        log.error(`Unable to obtain session for ${me.accountName}`);
+      }
+    });
+}
+
 function fetchLoop(me: IGlucoseFetcher) {
-  const { stopRequested, loopInterval } = me;
+  const { stopRequested, loopInterval, log } = me;
   if (stopRequested && loopInterval) {
     clearInterval(loopInterval);
   } else {
     if (me.sessionId) {
-      console.info(`Current Session Present, retrieving glucose`, me.sessionId);
+      log.info(`Current Session Present, retrieving glucose ${me.sessionId}`);
       try {
         //fetch the glucose
         fetchGlucose(me, me.sessionId).then((bsgvals) => {
@@ -31,47 +51,20 @@ function fetchLoop(me: IGlucoseFetcher) {
           }
         });
       } catch (error) {
-        console.error(`Error fetching glucose, re-authorizing`, error);
         me.sessionId = undefined;
-        //refresh the token
-        authorizeDexcomShare(me)
-          //then fetch the glucose
-          .then((sessionId) => {
-            if (sessionId) {
-              me.sessionId = sessionId;
-              fetchGlucose(me, sessionId).then((bsgvals) => {
-                if (bsgvals && me.onGlucoseReceived) {
-                  me.onGlucoseReceived(bsgvals);
-                }
-              });
-            } else {
-              console.error(`Unable to obtain session for ${me.accountName}`);
-            }
-          });
+        log.error(`Error fetching glucose, re-authorizing ${error}`);
+        authorizeAndFetch(me, log);
       }
     } else {
-      //refresh the token
-      authorizeDexcomShare(me)
-        //then fetch the glucose
-        .then((sessionId) => {
-          if (sessionId) {
-            me.sessionId = sessionId;
-            fetchGlucose(me, sessionId).then((bsgvals) => {
-              if (bsgvals && me.onGlucoseReceived) {
-                me.onGlucoseReceived(bsgvals);
-              }
-            });
-          } else {
-            console.error(`Unable to obtain session for ${me.accountName}`);
-          }
-        });
+      authorizeAndFetch(me, log);
     }
   }
 }
 
 const glucoseFetcher = (
   config: DexcomShareConfig,
-  fetchInterval: number = 300
+  fetchInterval: number = 300,
+  log: ILogger
 ): IGlucoseFetcher => {
   const fetchIntervalMs = fetchInterval * 1000;
   return {
@@ -79,13 +72,13 @@ const glucoseFetcher = (
     fetchInterval,
     stopRequested: false,
     entryLength: 1440,
+    log,
     start() {
-      const fetcher = () => fetchLoop(this);
       try {
-        fetcher();
-        this.loopInterval = setInterval(fetcher, fetchIntervalMs);
+        fetchLoop(this);
+        this.loopInterval = setInterval(() => fetchLoop(this), fetchIntervalMs);
       } catch (error) {
-        console.error(`Error setting up fetch loop`);
+        this.log.error(`Error setting up fetch loop! ${error}`);
       }
     },
     stop() {

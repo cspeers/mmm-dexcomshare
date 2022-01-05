@@ -168,7 +168,7 @@ export async function getDexcomShareAccountId(
     const { data } = await instance.post<string>(AUTH_URL, body);
     return data;
   } catch (error) {
-    console.log(error);
+    console.error(error);
   }
 }
 
@@ -183,7 +183,7 @@ export async function getDexcomShareSessionId(
     const { data } = await instance.post<string>(LOGIN_URL, body);
     return data;
   } catch (error) {
-    console.log(error);
+    console.error(error);
   }
 }
 
@@ -209,8 +209,13 @@ export async function getDexcomShareGlucose<T>(
   console.debug(`Retrieving Glucose readings from ${glucosePath}`);
   const instance = config.instance();
   try {
-    const { data } = await instance.post<DexcomResponse>(glucosePath);
+    const { data, status, statusText } = await instance.post<DexcomResponse>(
+      glucosePath
+    );
     if (data.length > 0) {
+      console.debug(
+        ` ${status} ${statusText} Received ${data.length} Glucose entries`
+      );
       const glucose = data.map(mapper);
       return glucose;
     }

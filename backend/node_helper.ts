@@ -1,11 +1,10 @@
 import { arch, release } from "os";
 
-import { create, IHelperConfig } from "node_helper";
+import { IHelperConfig, create } from "node_helper";
+
 import glucoseFetcher, { IGlucoseFetcher } from "./glucoseFetcher";
 import { DexcomShareGlucoseEntry, newDexcomShareConfig } from "./dexcom-share";
-
-const architecture = arch();
-const osVersion = release();
+import { moduleLogger } from "./moduleLogger";
 
 type ModuleConfig = {
   /** Dexcom Share Account */
@@ -38,37 +37,16 @@ interface IDexcomNodeHelperConfig extends IHelperConfig {
   stop(): void;
 }
 
-const ModuleLogger: ILogger = {
-  error(e) {
-    console.error(`[${ModuleDetails.name}] ${e}`);
-  },
-  info(e) {
-    console.info(`[${ModuleDetails.name}] ${e}`);
-  },
-  warn(e) {
-    console.warn(`[${ModuleDetails.name}] ${e}`);
-  }
-};
-
-const newGlucoseFetcher = (config: ModuleConfig) => {
-  const dsConfig = newDexcomShareConfig(
-    config.userName,
-    config.password,
-    config.server,
-    config.applicationId,
-    config.entryLength
-  );
-  return glucoseFetcher(dsConfig, config.refreshInterval);
-};
-
 const nodeHelperConfig: IDexcomNodeHelperConfig = {
   start() {
-    ModuleLogger.info(
-      `Starting Module Helper version : ${ModuleDetails.version} - ${osVersion}:${architecture}`
+    moduleLogger.info(
+      `Starting Module Helper version : ${
+        ModuleDetails.version
+      } - ${release()}:${arch()}`
     );
   },
   stop() {
-    ModuleLogger.info("Stopping Module Helper....");
+    moduleLogger.info("Stopping Module Helper....");
     if (this.fetcher) {
       this.fetcher.stop();
     }
@@ -80,17 +58,37 @@ const nodeHelperConfig: IDexcomNodeHelperConfig = {
     if (payload) {
       //this should be the config..
       this.config = payload;
-      ModuleLogger.info(`Received Module config\n${JSON.stringify(payload)}`);
+      moduleLogger.info(
+        `Received Module config Interval ${this.config.refreshInterval} secs...`
+      );
     }
     switch (notification) {
       case "START_FETCHING":
         if (this.config) {
           //create the fetcher and start it.
-          this.fetcher = newGlucoseFetcher(this.config);
+          const {
+            refreshInterval,
+            userName,
+            password,
+            server,
+            applicationId,
+            entryLength
+          } = this.config;
+          this.fetcher = glucoseFetcher(
+            newDexcomShareConfig(
+              userName,
+              password,
+              server,
+              applicationId,
+              entryLength
+            ),
+            refreshInterval,
+            moduleLogger
+          );
           this.fetcher.onGlucoseReceived = (entries) => {
             if (this.sendSocketNotification) {
               const received = new Date();
-              ModuleLogger.info(
+              moduleLogger.info(
                 `Received ${entries.length} entries at ${received}`
               );
               this.sendSocketNotification("BLOODSUGAR_VALUES", {
@@ -99,11 +97,13 @@ const nodeHelperConfig: IDexcomNodeHelperConfig = {
               });
             }
           };
+          moduleLogger.info(`Starting fetch cycle...`);
           this.fetcher.start();
         }
         break;
       case "STOP_FETCHING":
         if (this.fetcher) {
+          moduleLogger.info(`Halting fetch cycle...`);
           this.fetcher.stop();
         }
         break;

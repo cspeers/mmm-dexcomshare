@@ -102,6 +102,9 @@ function renderChart(
   me: IDexcomModuleProperties,
   bgValues: IDexcomShareGlucoseEntry[]
 ) {
+  const type = me.config.chartType;
+  const options = me.config.chartOptions;
+
   //These should be ordered descending by time
   me.bgValues = bgValues;
   me.currentBG = bgValues[0];
@@ -117,23 +120,25 @@ function renderChart(
           Min:${minInSeries} Max:${maxInSeries}
           Direction:${me.currentBG.Direction} ${me.currentBG.DirectionAsUnicode} Delta:${delta}`);
 
-  const lowBgVals = bgValues
-    .filter((e) => +e.Value <= me.config.lowRange)
-    .map((a) => {
-      return { x: a.WT, y: a.Value };
-    });
-  const inRangeVals = bgValues
-    .filter(
-      (e) => +e.Value >= me.config.lowRange && +e.Value <= me.config.highRange
-    )
-    .map((a) => {
-      return { x: a.WT, y: a.Value };
-    });
-  const highVals = bgValues
-    .filter((e) => +e.Value >= me.config.highRange)
-    .map((a) => {
-      return { x: a.WT, y: a.Value };
-    });
+  const glucose = {
+    lowBgVals: bgValues
+      .filter((e) => +e.Value <= me.config.lowRange)
+      .map((a) => {
+        return { x: a.WT, y: a.Value };
+      }),
+    inRangeVals: bgValues
+      .filter(
+        (e) => +e.Value >= me.config.lowRange && +e.Value <= me.config.highRange
+      )
+      .map((a) => {
+        return { x: a.WT, y: a.Value };
+      }),
+    highVals: bgValues
+      .filter((e) => +e.Value >= me.config.highRange)
+      .map((a) => {
+        return { x: a.WT, y: a.Value };
+      })
+  };
 
   const bgValSpan = document.querySelector("#current-bsg-value");
   if (bgValSpan) {
@@ -164,9 +169,6 @@ function renderChart(
 
     bgValSpan.innerHTML = infoDiv.outerHTML;
   }
-
-  const type = me.config.chartType;
-  const options = me.config.chartOptions;
   if (options) {
     //we'll use the simple setting from the config if a full chartjs one wasn't given
     if (
@@ -180,7 +182,7 @@ function renderChart(
       datasets: [
         {
           label: `Low <= ${me.config.lowRange} mg/dL`,
-          data: lowBgVals,
+          data: glucose.lowBgVals,
           borderColor: "red",
           backgroundColor: "red",
           fill: me.config.fill,
@@ -188,7 +190,7 @@ function renderChart(
         },
         {
           label: "In Range",
-          data: inRangeVals,
+          data: glucose.inRangeVals,
           backgroundColor: "limegreen",
           borderColor: "limegreen",
           fill: me.config.fill,
@@ -196,7 +198,7 @@ function renderChart(
         },
         {
           label: `High >= ${me.config.highRange} mg/dL`,
-          data: highVals,
+          data: glucose.highVals,
           backgroundColor: "yellow",
           borderColor: "yellow",
           fill: me.config.fill,
