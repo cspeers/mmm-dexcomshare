@@ -73,22 +73,25 @@ const glucoseFetcher = (
   config: DexcomShareConfig,
   fetchInterval: number = 300
 ): IGlucoseFetcher => {
-  const fetcher: IGlucoseFetcher = {
+  const fetchIntervalMs = fetchInterval * 1000;
+  return {
     ...config,
     fetchInterval,
     stopRequested: false,
     entryLength: 1440,
     start() {
-      const me = this as IGlucoseFetcher;
-      fetchLoop(me);
-      me.loopInterval = setInterval(() => fetchLoop(me), fetchInterval * 1000);
+      const fetcher = () => fetchLoop(this);
+      try {
+        fetcher();
+        this.loopInterval = setInterval(fetcher, fetchIntervalMs);
+      } catch (error) {
+        console.error(`Error setting up fetch loop`);
+      }
     },
     stop() {
-      const me = this as IGlucoseFetcher;
-      me.stopRequested = true;
+      this.stopRequested = true;
     }
   };
-  return fetcher;
 };
 
 export default glucoseFetcher;

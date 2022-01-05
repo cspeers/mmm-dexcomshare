@@ -38,6 +38,18 @@ interface IDexcomNodeHelperConfig extends IHelperConfig {
   stop(): void;
 }
 
+const ModuleLogger: ILogger = {
+  error(e) {
+    console.error(`[${ModuleDetails.name}] ${e}`);
+  },
+  info(e) {
+    console.info(`[${ModuleDetails.name}] ${e}`);
+  },
+  warn(e) {
+    console.warn(`[${ModuleDetails.name}] ${e}`);
+  }
+};
+
 const newGlucoseFetcher = (config: ModuleConfig) => {
   const dsConfig = newDexcomShareConfig(
     config.userName,
@@ -51,12 +63,12 @@ const newGlucoseFetcher = (config: ModuleConfig) => {
 
 const nodeHelperConfig: IDexcomNodeHelperConfig = {
   start() {
-    console.info(
+    ModuleLogger.info(
       `Starting Module Helper version : ${ModuleDetails.version} - ${osVersion}:${architecture}`
     );
   },
   stop() {
-    console.info("Stopping Module Helper....");
+    ModuleLogger.info("Stopping Module Helper....");
     if (this.fetcher) {
       this.fetcher.stop();
     }
@@ -68,7 +80,7 @@ const nodeHelperConfig: IDexcomNodeHelperConfig = {
     if (payload) {
       //this should be the config..
       this.config = payload;
-      console.info(`Received Module config`, payload);
+      ModuleLogger.info(`Received Module config\n${JSON.stringify(payload)}`);
     }
     switch (notification) {
       case "START_FETCHING":
@@ -78,7 +90,7 @@ const nodeHelperConfig: IDexcomNodeHelperConfig = {
           this.fetcher.onGlucoseReceived = (entries) => {
             if (this.sendSocketNotification) {
               const received = new Date();
-              console.debug(
+              ModuleLogger.info(
                 `Received ${entries.length} entries at ${received}`
               );
               this.sendSocketNotification("BLOODSUGAR_VALUES", {
