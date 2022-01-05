@@ -1,3 +1,132 @@
+const chartjsPath = "./node_modules/chart.js/dist/Chart.bundle.js";
+const moduleCssPath = "./mmm-dexcomshare.css";
+
+/** properties for the client module */
+interface IDexcomModuleProperties extends IModuleProperties {
+  /** subclass of the notification received event */
+  notificationReceived: ModuleNotificationEvent;
+  /** subclass of the socket notification received event */
+  socketNotificationReceived: ISocketNotificationEvent<
+    DexcomModuleNotificationType,
+    IDexcomGlucoseEntryMessage<any>
+  >;
+  version: string;
+  defaults: IDexcomModuleConfig;
+  canvas?: HTMLCanvasElement;
+
+  currentBG?: IDexcomShareGlucoseEntry;
+  previousBG?: IDexcomShareGlucoseEntry;
+  bgValues?: Array<IDexcomShareGlucoseEntry>;
+  config?: IDexcomModuleConfig;
+}
+
+/** wrapper for the Magic Mirror logger */
+const ModuleLogger: ILogger = {
+  info: (m: string): void => Log.info(`[${ModuleDetails.name}] ${m}`),
+  warn: (m: string): void => Log.warn(`[${ModuleDetails.name}] ${m}`),
+  error: (m: string): void => Log.error(`[${ModuleDetails.name}] ${m}`)
+};
+
+type GlucoseDataSets = {
+  low: Chart.ChartPoint[];
+  inRange: Chart.ChartPoint[];
+  high: Chart.ChartPoint[];
+};
+
+function bsgToPoint(a: IDexcomShareGlucoseEntry): Chart.ChartPoint {
+  return { x: a.WT, y: a.Value };
+}
+
+function renderInfoDiv(me: IDexcomModuleProperties) {
+  const bgValSpan = document.querySelector("#current-bsg-value");
+  if (bgValSpan) {
+    const { currentBG, previousBG, config } = me;
+    const delta = currentBG.Value - previousBG.Value;
+    const deltaSign = delta >= 0 ? "+" : "-";
+
+    let fontColor = "#5AB05A";
+    if (currentBG.Value >= config.highRange) {
+      fontColor = "#E5E500";
+    } else if (currentBG.Value < config.lowRange) {
+      fontColor = "#E50000";
+    }
+
+    const infoDiv = document.createElement("div");
+    infoDiv.setAttribute("style", "float: left;clear: none;");
+
+    const bs = document.createElement("div");
+    bs.setAttribute("style", "display: table;");
+    bs.innerHTML = `
+    <span class="bright medium light currentbsg" style="color:${fontColor}">${
+      currentBG?.Value.toString() ?? "???"
+    }</span>
+    <span class="bright medium light currentbsg"/>
+    <span class="bright medium light currentbsg">${
+      currentBG?.DirectionAsUnicode ?? "-"
+    }</span>
+`;
+
+    infoDiv.appendChild(bs);
+    const deltaElem = document.createElement("div");
+    deltaElem.innerHTML = `<span class="dimmed small light bsgvalue">${deltaSign}${delta} mg/dL</span>`;
+    infoDiv.appendChild(deltaElem);
+
+    bgValSpan.innerHTML = infoDiv.outerHTML;
+  }
+  return bgValSpan;
+}
+
+function bsgToChartData(
+  me: IDexcomModuleProperties,
+  bgValues: IDexcomShareGlucoseEntry[]
+): Chart.ChartData {
+  const glucose = bgValues.reduce<GlucoseDataSets>(
+    (a, e) => {
+      if (e.Value <= me.config.lowRange) {
+        a.low.push(bsgToPoint(e));
+      } else if (
+        e.Value >= me.config.lowRange &&
+        e.Value <= me.config.highRange
+      ) {
+        a.high.push(bsgToPoint(e));
+      } else if (e.Value >= me.config.highRange) {
+        a.inRange.push(bsgToPoint(e));
+      }
+      return a;
+    },
+    { low: [], inRange: [], high: [] }
+  );
+  const data: Chart.ChartData = {
+    datasets: [
+      {
+        label: `Low <= ${me.config.lowRange} mg/dL`,
+        data: glucose.low,
+        borderColor: "red",
+        backgroundColor: "red",
+        fill: me.config.fill,
+        pointRadius: 2
+      },
+      {
+        label: "In Range",
+        data: glucose.inRange,
+        backgroundColor: "limegreen",
+        borderColor: "limegreen",
+        fill: me.config.fill,
+        pointRadius: 2
+      },
+      {
+        label: `High >= ${me.config.highRange} mg/dL`,
+        data: glucose.high,
+        backgroundColor: "yellow",
+        borderColor: "yellow",
+        fill: me.config.fill,
+        pointRadius: 2
+      }
+    ]
+  };
+  return data;
+}
+
 const defaultChartOptions: Chart.ChartOptions = {
   responsive: true,
   maintainAspectRatio: true,
@@ -55,56 +184,34 @@ const defaultChartOptions: Chart.ChartOptions = {
   aspectRatio: 4 / 3
 };
 
-/** properties for the client module */
-interface IDexcomModuleProperties extends IModuleProperties {
-  /** subclass of the notification received event */
-  notificationReceived: ModuleNotificationEvent;
-  /** subclass of the socket notification received event */
-  socketNotificationReceived: ISocketNotificationEvent<
-    DexcomModuleNotificationType,
-    IDexcomGlucoseEntryMessage<any>
-  >;
-  version: string;
-  defaults: IDexcomModuleConfig;
-  canvas?: HTMLCanvasElement;
-
-  currentBG?: IDexcomShareGlucoseEntry;
-  previousBG?: IDexcomShareGlucoseEntry;
-  bgValues?: Array<IDexcomShareGlucoseEntry>;
-  config?: IDexcomModuleConfig;
-}
-
-/** wrapper for the Magic Mirror logger */
-const ModuleLogger: ILogger = {
-  info: (m: string): void => Log.info(`[${ModuleDetails.name}] ${m}`),
-  warn: (m: string): void => Log.warn(`[${ModuleDetails.name}] ${m}`),
-  error: (m: string): void => Log.error(`[${ModuleDetails.name}] ${m}`)
-};
-
-const chartjsPath = "./node_modules/chart.js/dist/Chart.bundle.js";
-const moduleCssPath = "./mmm-dexcomshare.css";
-
-const currentBgValHtml = (
-  currentBg: string,
-  currentBgDirection: string,
-  fontColor: string
-) =>
-  `
-          <span class="bright medium light currentbsg" style="color:${fontColor}">${currentBg}</span>
-          <span class="bright medium light currentbsg"/>
-          <span class="bright medium light currentbsg">${currentBgDirection}</span>
-      `;
-
-const bsgDisplayHtml = (deltaSign: string, delta: number): string =>
-  `<span class="dimmed small light bsgvalue">${deltaSign}${delta} mg/dL</span>`;
-
 function renderChart(
   me: IDexcomModuleProperties,
   bgValues: IDexcomShareGlucoseEntry[]
 ) {
-  const type = me.config.chartType;
-  const options = me.config.chartOptions;
+  const type = me.config.chartType ?? "line";
+  const options = me.config.chartOptions ?? defaultChartOptions;
+  const data = bsgToChartData(me, bgValues);
 
+  //we'll use the simple setting from the config if a full chartjs one wasn't given
+  if (
+    options.title.text === "Blood Sugar Values (mg/dl)" &&
+    !options.title.display
+  ) {
+    options.scales.xAxes[0].display = me.config.showX;
+    options.scales.yAxes[0].display = me.config.showY;
+  }
+  const glucoseChart = new Chart(me.canvas, {
+    type,
+    data,
+    options
+  });
+  return glucoseChart;
+}
+
+function renderModule(
+  me: IDexcomModuleProperties,
+  bgValues: IDexcomShareGlucoseEntry[]
+) {
   //These should be ordered descending by time
   me.bgValues = bgValues;
   me.currentBG = bgValues[0];
@@ -114,104 +221,42 @@ function renderChart(
   const maxInSeries = Math.max.apply(bsgs.slice(0, 1), bsgs.slice(1));
   const minInSeries = Math.min.apply(bsgs.slice(0, 1), bsgs.slice(1));
 
-  const delta = me.currentBG.Value - me.previousBG.Value;
+  ModuleLogger.info(`BG Values ${me.currentBG.DirectionAsUnicode} Current:${
+    me.currentBG.Value
+  } Previous:${me.previousBG.Value}
+            Min:${minInSeries} Max:${maxInSeries}
+            Direction:${me.currentBG.Direction} ${
+    me.currentBG.DirectionAsUnicode
+  } Delta:${me.currentBG.Value - me.previousBG.Value}`);
 
-  ModuleLogger.info(`BG Values ${me.currentBG.DirectionAsUnicode} Current:${me.currentBG.Value} Previous:${me.previousBG.Value}
-          Min:${minInSeries} Max:${maxInSeries}
-          Direction:${me.currentBG.Direction} ${me.currentBG.DirectionAsUnicode} Delta:${delta}`);
+  const infoDiv = renderInfoDiv(me);
+  const chart = renderChart(me, bgValues);
+}
 
-  const glucose = {
-    lowBgVals: bgValues
-      .filter((e) => +e.Value <= me.config.lowRange)
-      .map((a) => {
-        return { x: a.WT, y: a.Value };
-      }),
-    inRangeVals: bgValues
-      .filter(
-        (e) => +e.Value >= me.config.lowRange && +e.Value <= me.config.highRange
-      )
-      .map((a) => {
-        return { x: a.WT, y: a.Value };
-      }),
-    highVals: bgValues
-      .filter((e) => +e.Value >= me.config.highRange)
-      .map((a) => {
-        return { x: a.WT, y: a.Value };
-      })
-  };
+function getDom(me: IDexcomModuleProperties) {
+  const wrapper = document.createElement("div");
+  wrapper.classList.add("magicmirror-dexcomshare");
 
-  const bgValSpan = document.querySelector("#current-bsg-value");
-  if (bgValSpan) {
-    const deltaSign = delta >= 0 ? "+" : "-";
+  const moduleContent = document.createElement("div");
+  moduleContent.id = "magicmirror-dexcomshare-content";
 
-    let fontColor = "#5AB05A";
-    if (me.currentBG.Value >= me.config.highRange) {
-      fontColor = "#E5E500";
-    } else if (me.currentBG.Value < me.config.lowRange) {
-      fontColor = "#E50000";
-    }
+  const bgDetail = document.createElement("div");
+  const bgNumberSpan = document.createElement("div");
+  bgNumberSpan.id = "current-bsg-value";
 
-    const infoDiv = document.createElement("div");
-    infoDiv.setAttribute("style", "float: left;clear: none;");
+  bgDetail.appendChild(bgNumberSpan);
 
-    const bs = document.createElement("div");
-    bs.setAttribute("style", "display: table;");
-    bs.innerHTML = currentBgValHtml(
-      me.currentBG?.Value.toString() ?? "???",
-      me.currentBG?.DirectionAsUnicode ?? "-",
-      fontColor
-    );
+  moduleContent.appendChild(bgDetail);
 
-    infoDiv.appendChild(bs);
-    const deltaElem = document.createElement("div");
-    deltaElem.innerHTML = bsgDisplayHtml(deltaSign, delta);
-    infoDiv.appendChild(deltaElem);
+  const glucoseCanvas = document.createElement("canvas");
+  glucoseCanvas.id = "glucoseChart";
+  glucoseCanvas.classList.add("magicmirror-dexcomshare-chart");
+  me.canvas = glucoseCanvas;
 
-    bgValSpan.innerHTML = infoDiv.outerHTML;
-  }
-  if (options) {
-    //we'll use the simple setting from the config if a full chartjs one wasn't given
-    if (
-      options.title.text === "Blood Sugar Values (mg/dl)" &&
-      !options.title.display
-    ) {
-      options.scales.xAxes[0].display = me.config.showX;
-      options.scales.yAxes[0].display = me.config.showY;
-    }
-    const data: Chart.ChartData = {
-      datasets: [
-        {
-          label: `Low <= ${me.config.lowRange} mg/dL`,
-          data: glucose.lowBgVals,
-          borderColor: "red",
-          backgroundColor: "red",
-          fill: me.config.fill,
-          pointRadius: 2
-        },
-        {
-          label: "In Range",
-          data: glucose.inRangeVals,
-          backgroundColor: "limegreen",
-          borderColor: "limegreen",
-          fill: me.config.fill,
-          pointRadius: 2
-        },
-        {
-          label: `High >= ${me.config.highRange} mg/dL`,
-          data: glucose.highVals,
-          backgroundColor: "yellow",
-          borderColor: "yellow",
-          fill: me.config.fill,
-          pointRadius: 2
-        }
-      ]
-    };
-    const glucoseChart = new Chart(me.canvas, {
-      type,
-      data,
-      options
-    });
-  }
+  moduleContent.appendChild(glucoseCanvas);
+  wrapper.appendChild(moduleContent);
+
+  return wrapper;
 }
 
 function getDexcomModuleProperties(
@@ -243,30 +288,7 @@ function getDexcomModuleProperties(
       return [this.file(moduleCssPath)];
     },
     getDom() {
-      const me = this as IDexcomModuleProperties;
-      const wrapper = document.createElement("div");
-      wrapper.classList.add("magicmirror-dexcomshare");
-
-      const moduleContent = document.createElement("div");
-      moduleContent.id = "magicmirror-dexcomshare-content";
-
-      const bgDetail = document.createElement("div");
-      const bgNumberSpan = document.createElement("div");
-      bgNumberSpan.id = "current-bsg-value";
-
-      bgDetail.appendChild(bgNumberSpan);
-
-      moduleContent.appendChild(bgDetail);
-
-      const glucoseCanvas = document.createElement("canvas");
-      glucoseCanvas.id = "glucoseChart";
-      glucoseCanvas.classList.add("magicmirror-dexcomshare-chart");
-      me.canvas = glucoseCanvas;
-
-      moduleContent.appendChild(glucoseCanvas);
-      wrapper.appendChild(moduleContent);
-
-      return wrapper;
+      return getDom(this);
     },
     start() {
       ModuleLogger.info(`Starting up...`);
@@ -302,11 +324,8 @@ function getDexcomModuleProperties(
         case "BLOODSUGAR_VALUES":
           if (payload) {
             const { received, entries } = payload;
-            ModuleLogger.info(
-              `Received at ${received} entries ${entries.length}`
-            );
-            //render the chart
-            renderChart(me, entries);
+            ModuleLogger.info(`${received} ${entries.length} entries`);
+            renderModule(me, entries);
           }
           break;
         case "AUTH_ERROR":
