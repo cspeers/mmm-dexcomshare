@@ -1,6 +1,11 @@
 node_modules/**
 *.js
 *.js.map
-*.d.ts
-tsconfig.tsbuildinfo
+*.d.ts*
+frontend/*.d.ts*
+frontend/*.js
+backend/*.d.ts*
+backend/*.js
+**/*.tsbuildinfo
 package-lock.json
+*.tsbuildinfo
