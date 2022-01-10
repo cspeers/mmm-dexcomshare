@@ -208,18 +208,14 @@ export async function getDexcomShareGlucose<T>(
   const glucosePath = `${LATEST_GLUCOSE_URL}?${glucoseQuery}`;
   console.debug(`Retrieving Glucose readings from ${glucosePath}`);
   const instance = config.instance();
-  try {
-    const { data, status, statusText, config } =
-      await instance.post<DexcomResponse>(glucosePath);
-    if (data.length > 0) {
-      console.debug(
-        `[${status} ${statusText}] Received ${data.length} Glucose entries from ${config.baseURL}`
-      );
-      const glucose = data.map(mapper);
-      return glucose;
-    }
-  } catch (error) {
-    console.error(error);
+  const response = await instance.post<DexcomResponse>(glucosePath);
+  const { data, status, statusText } = response;
+  if (data.length > 0) {
+    console.debug(
+      `[${status} ${statusText}] Received ${data.length} Glucose entries from ${response.config.baseURL}`
+    );
+    const glucose = data.map(mapper);
+    return glucose;
   }
 }
 
