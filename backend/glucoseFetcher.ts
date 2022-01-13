@@ -50,18 +50,18 @@ function fetchLoop(me: IGlucoseFetcher) {
   } else {
     if (me.sessionId) {
       log.info(`Current Session Present, retrieving glucose ${me.sessionId}`);
-      try {
-        //fetch the glucose
-        fetchGlucose(me, me.sessionId).then((bsgvals) => {
+      //fetch the glucose
+      fetchGlucose(me, me.sessionId)
+        .then((bsgvals) => {
           if (bsgvals && me.onGlucoseReceived) {
             me.onGlucoseReceived(bsgvals);
           }
+        })
+        .catch((error) => {
+          me.sessionId = undefined;
+          log.error(`Error fetching glucose, re-authorizing ${error}`);
+          authorizeAndFetch(me);
         });
-      } catch (error) {
-        me.sessionId = undefined;
-        log.error(`Error fetching glucose, re-authorizing ${error}`);
-        authorizeAndFetch(me);
-      }
     } else {
       authorizeAndFetch(me);
     }

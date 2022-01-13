@@ -210,6 +210,11 @@ export async function getDexcomShareGlucose<T>(
   const instance = config.instance();
   const response = await instance.post<DexcomResponse>(glucosePath);
   const { data, status, statusText } = response;
+  if (status !== 200) {
+    throw new Error(
+      `Unsuccessful request ${response.config.baseURL} ${status} ${statusText}`
+    );
+  }
   if (data.length > 0) {
     console.debug(
       `[${status} ${statusText}] Received ${data.length} Glucose entries from ${response.config.baseURL}`
