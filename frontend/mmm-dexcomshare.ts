@@ -79,7 +79,9 @@ function renderInfoDiv(
   bgValSpan: Element
 ) {
   if (bgValSpan) {
-    const delta = currentBG.Value - previousBG.Value;
+    const delta = currentBG.Value
+      ? currentBG.Value - previousBG?.Value ?? 0
+      : 0;
     const deltaSign = delta >= 0 ? "+" : "-";
 
     let fontColor = "#5AB05A";
@@ -96,7 +98,7 @@ function renderInfoDiv(
     bs.setAttribute("style", "display: table;");
     bs.innerHTML = `
     <span class="bright medium light currentbsg" style="color:${fontColor}">${
-      currentBG?.Value.toString() ?? "???"
+      currentBG?.Value?.toString() ?? "???"
     }</span>
     <span class="bright medium light currentbsg"/>
     <span class="bright medium light currentbsg">${
@@ -118,17 +120,20 @@ function bsgToChartData(
   config: IDexcomModuleConfig,
   bgValues: IDexcomShareGlucoseEntry[]
 ): Chart.ChartData {
+  console.debug(`Current Values`, bgValues);
   const glucose = bgValues.reduce<GlucoseDataSets>(
     (acc, bsg) => {
-      if (bsg.Value <= config.lowRange) {
-        acc.low.push(bsgToChartPoint(bsg));
-      } else if (
-        bsg.Value >= config.lowRange &&
-        bsg.Value <= config.highRange
-      ) {
-        acc.inRange.push(bsgToChartPoint(bsg));
-      } else if (bsg.Value >= config.highRange) {
-        acc.high.push(bsgToChartPoint(bsg));
+      if (bsg.Value) {
+        if (bsg.Value <= config.lowRange) {
+          acc.low.push(bsgToChartPoint(bsg));
+        } else if (
+          bsg.Value >= config.lowRange &&
+          bsg.Value <= config.highRange
+        ) {
+          acc.inRange.push(bsgToChartPoint(bsg));
+        } else if (bsg.Value >= config.highRange) {
+          acc.high.push(bsgToChartPoint(bsg));
+        }
       }
       return acc;
     },
@@ -193,23 +198,55 @@ function renderModule(
   me: IDexcomModuleProperties,
   bgValues: IDexcomShareGlucoseEntry[]
 ) {
+  const now = new Date();
   const { config, canvas } = me;
   //These should be ordered descending by time
-  me.bgValues = bgValues;
-  me.currentBG = bgValues[0];
-  me.previousBG = bgValues[1];
+  const currentBG = bgValues[0];
+  const previousBG = bgValues[1];
 
-  const bsgs = bgValues.map((a) => a.Value);
+  //is the latest value less than 10 mins. old?
+  if (currentBG.WT > moment(now).subtract(10, "minutes").toDate()) {
+    me.currentBG = currentBG;
+    me.previousBG = previousBG;
+    me.bgValues = bgValues;
+  } else {
+    ModuleLogger.warn(`Previous entry older than 10 minutes...`);
+    //create ghost entries for the missing time...
+    const revals: IDexcomShareGlucoseEntry[] = [];
+    const minsSinceValue = moment(now).diff(moment(currentBG.WT), "minutes");
+    for (let index = 0; index < Math.floor(minsSinceValue / 5) - 1; index++) {
+      const el: IDexcomShareGlucoseEntry = {
+        DT: moment(now)
+          .subtract(5 * (index + 1), "minutes")
+          .local()
+          .toDate(),
+        ST: moment(now)
+          .subtract(5 * (index + 1), "minutes")
+          .toDate(),
+        WT: moment(now)
+          .subtract(5 * (index + 1), "minutes")
+          .toDate(),
+        Direction: "NOT COMPUTABLE",
+        DirectionAsUnicode: "-",
+        Trend: DexcomTrend.NotComputable
+      };
+      revals.push(el);
+    }
+    me.currentBG = revals[0];
+    me.previousBG = currentBG;
+    me.bgValues = [...revals, ...bgValues];
+  }
+
+  const bsgs = me.bgValues.filter((a) => a.Value).map((a) => a.Value);
   const maxInSeries = Math.max.apply(bsgs.slice(0, 1), bsgs.slice(1));
   const minInSeries = Math.min.apply(bsgs.slice(0, 1), bsgs.slice(1));
-
   ModuleLogger.info(`BG Values ${me.currentBG.DirectionAsUnicode} Current:${
     me.currentBG.Value
   } Previous:${me.previousBG.Value}
-            Min:${minInSeries} Max:${maxInSeries}
-            Direction:${me.currentBG.Direction} ${
+          Min:${minInSeries} Max:${maxInSeries}
+          Direction:${me.currentBG.Direction} ${
     me.currentBG.DirectionAsUnicode
-  } Delta:${me.currentBG.Value - me.previousBG.Value}`);
+  } Delta:${me.currentBG ? me.currentBG.Value - me.previousBG.Value : 0}`);
   const bgValSpan = document.querySelector("#current-bsg-value");
   renderInfoDiv(me.currentBG, me.previousBG, config, bgValSpan);
   renderChart(config, canvas, bgValues);

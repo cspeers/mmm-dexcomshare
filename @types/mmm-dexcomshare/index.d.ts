@@ -87,7 +87,7 @@ declare interface IDexcomShareGlucose<T> {
   /** The blood sugar trend */
   Trend: DexcomTrend;
   /** The blood sugar value */
-  Value: number;
+  Value?: number;
   /** The wall time for the reading */
   WT: T;
 }

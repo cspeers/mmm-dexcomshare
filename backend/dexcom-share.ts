@@ -74,7 +74,7 @@ export interface DexcomShareGlucoseEntry extends DexcomShareGlucose<Date> {
 
 export type DexcomResponse = DexcomShareGlucose<string>[];
 
-function trendToUnicode(trend: DexcomTrend): string {
+export function trendToUnicode(trend: DexcomTrend): string {
   switch (trend) {
     case "DoubleUp":
       return "⇈";
