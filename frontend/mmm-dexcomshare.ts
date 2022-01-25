@@ -204,38 +204,9 @@ function renderModule(
   const currentBG = bgValues[0];
   const previousBG = bgValues[1];
 
-  //is the latest value less than 10 mins. old?
-  if (currentBG.WT > moment(now).subtract(10, "minutes").toDate()) {
-    me.currentBG = currentBG;
-    me.previousBG = previousBG;
-    me.bgValues = bgValues;
-  } else {
-    ModuleLogger.warn(`Previous entry older than 10 minutes...`);
-    //create ghost entries for the missing time...
-    const revals: IDexcomShareGlucoseEntry[] = [];
-    const minsSinceValue = moment(now).diff(moment(currentBG.WT), "minutes");
-    for (let index = 0; index < Math.floor(minsSinceValue / 5) - 1; index++) {
-      const el: IDexcomShareGlucoseEntry = {
-        DT: moment(now)
-          .subtract(5 * (index + 1), "minutes")
-          .local()
-          .toDate(),
-        ST: moment(now)
-          .subtract(5 * (index + 1), "minutes")
-          .toDate(),
-        WT: moment(now)
-          .subtract(5 * (index + 1), "minutes")
-          .toDate(),
-        Direction: "NOT COMPUTABLE",
-        DirectionAsUnicode: "-",
-        Trend: DexcomTrend.NotComputable
-      };
-      revals.push(el);
-    }
-    me.currentBG = revals[0];
-    me.previousBG = currentBG;
-    me.bgValues = [...revals, ...bgValues];
-  }
+  me.currentBG = currentBG;
+  me.previousBG = previousBG;
+  me.bgValues = bgValues;
 
   const bsgs = me.bgValues.filter((a) => a.Value).map((a) => a.Value);
   const maxInSeries = Math.max.apply(bsgs.slice(0, 1), bsgs.slice(1));

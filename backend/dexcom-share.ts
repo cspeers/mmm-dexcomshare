@@ -194,7 +194,9 @@ export async function authorizeDexcomShare(config: DexcomShareConfig) {
   }
   const accountId = await getDexcomShareAccountId(config);
   if (accountId) {
-    return await getDexcomShareSessionId(accountId, config);
+    const sessionId = await getDexcomShareSessionId(accountId, config);
+    console.debug(`Dexcom Account Id:${accountId} Session:${sessionId}`)
+    return sessionId;
   }
 }
 
