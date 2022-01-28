@@ -48,21 +48,23 @@ function fetchLoop(me: IGlucoseFetcher) {
   if (stopRequested && loopInterval) {
     clearInterval(loopInterval);
   } else {
+    //there is already a session id, go fetch the entries...
     if (me.sessionId) {
       log.info(`Current Session Present, retrieving glucose ${me.sessionId}`);
-      //fetch the glucose
       fetchGlucose(me, me.sessionId)
         .then((bsgvals) => {
           if (bsgvals && me.onGlucoseReceived) {
             me.onGlucoseReceived(bsgvals);
           }
         })
+        //we likely have an invalid session, re-authorize and fetch
         .catch((error) => {
           me.sessionId = undefined;
           log.error(`Error fetching glucose, re-authorizing ${error}`);
           authorizeAndFetch(me);
         });
     } else {
+      //we need to get a session id first
       authorizeAndFetch(me);
     }
   }

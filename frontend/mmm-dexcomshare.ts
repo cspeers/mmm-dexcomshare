@@ -225,6 +225,7 @@ function renderModule(
 
 function getDom(me: IDexcomModuleProperties) {
   const wrapper = document.createElement("div");
+  
   wrapper.classList.add("magicmirror-dexcomshare");
 
   const moduleContent = document.createElement("div");
